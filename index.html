@@ -4,34 +4,168 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LAN Chat</title>
-    <link rel="stylesheet" href="css/style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #app { height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .screen { width: 100%; height: 100%; }
+        .hidden { display: none !important; }
+        
+        /* АВТОРИЗАЦИЯ */
+        #auth-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        }
+        .card {
+            background: #0f3460;
+            padding: 40px;
+            border-radius: 16px;
+            width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .card h1 { font-size: 28px; margin-bottom: 4px; }
+        .subtitle { color: #a0a0b0; font-size: 14px; margin-bottom: 24px; }
+        #auth-tabs { display: flex; margin-bottom: 20px; }
+        .tab {
+            flex: 1; padding: 10px; background: #1a1a2e;
+            border: none; color: #a0a0b0; cursor: pointer; font-size: 14px;
+        }
+        .tab:first-child { border-radius: 8px 0 0 8px; }
+        .tab:last-child { border-radius: 0 8px 8px 0; }
+        .tab.active { background: #e94560; color: white; }
+        .auth-form { display: flex; flex-direction: column; gap: 12px; }
+        .auth-form.hidden { display: none; }
+        .auth-form input {
+            padding: 12px 16px; border: 1px solid #2a2a4a; border-radius: 8px;
+            background: #1a1a2e; color: white; font-size: 14px; outline: none;
+        }
+        .auth-form input:focus { border-color: #e94560; }
+        .auth-form button {
+            padding: 12px; background: #e94560; color: white; border: none;
+            border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;
+        }
+        .auth-form button:hover { background: #d63851; }
+        .error { color: #ff6b6b; font-size: 13px; }
+        
+        /* ЧАТ */
+        #chat-screen { display: flex; max-width: 1200px; width: 100%; margin: 0 auto; }
+        #sidebar {
+            width: 280px; background: #0f3460; display: flex;
+            flex-direction: column; border-right: 1px solid #2a2a4a;
+        }
+        #user-info {
+            padding: 16px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid #2a2a4a;
+        }
+        #current-user { font-weight: 600; font-size: 16px; }
+        #logout-btn { background: none; border: none; font-size: 18px; cursor: pointer; }
+        #contacts-section { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+        #contacts-section h3 { font-size: 13px; color: #a0a0b0; margin-bottom: 12px; text-transform: uppercase; }
+        #add-contact { display: flex; gap: 6px; margin-bottom: 16px; }
+        #add-contact input {
+            flex: 1; padding: 8px 12px; border: 1px solid #2a2a4a; border-radius: 6px;
+            background: #1a1a2e; color: white; font-size: 13px; outline: none;
+        }
+        #add-contact button {
+            padding: 8px 12px; background: #e94560; color: white;
+            border: none; border-radius: 6px; cursor: pointer; font-size: 16px;
+        }
+        #contacts-list { flex: 1; overflow-y: auto; }
+        .contact-item {
+            padding: 10px 12px; border-radius: 8px; cursor: pointer;
+            margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .contact-item:hover { background: #16213e; }
+        .contact-item.active { background: #e94560; }
+        .contact-item .delete-contact { opacity: 0; cursor: pointer; color: #ff6b6b; }
+        .contact-item:hover .delete-contact { opacity: 1; }
+        
+        #chat-area { flex: 1; display: flex; background: #16213e; }
+        #chat-placeholder {
+            flex: 1; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: #a0a0b0;
+        }
+        .big-icon { font-size: 64px; margin-bottom: 16px; }
+        #chat-window { flex: 1; display: flex; flex-direction: column; }
+        #chat-window.hidden { display: none; }
+        #chat-header {
+            padding: 16px; border-bottom: 1px solid #2a2a4a;
+            display: flex; justify-content: space-between; align-items: center; background: #0f3460;
+        }
+        #chat-partner { font-weight: 600; font-size: 16px; }
+        #messages {
+            flex: 1; overflow-y: auto; padding: 16px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .message {
+            max-width: 75%; padding: 10px 14px; border-radius: 12px;
+            word-wrap: break-word; animation: fadeIn 0.2s;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } }
+        .message.sent { align-self: flex-end; background: #e94560; color: white; }
+        .message.received { align-self: flex-start; background: #0f3460; }
+        .message .msg-time { font-size: 10px; opacity: 0.6; margin-top: 4px; text-align: right; }
+        .message .msg-text { font-size: 14px; line-height: 1.4; }
+        .message .msg-file {
+            display: flex; align-items: center; gap: 8px; padding: 8px;
+            background: rgba(255,255,255,0.1); border-radius: 8px; margin-top: 4px; cursor: pointer;
+        }
+        .message .msg-file img { max-width: 200px; max-height: 200px; border-radius: 6px; }
+        
+        #file-preview {
+            padding: 8px 16px; background: #0f3460; display: flex;
+            justify-content: space-between; align-items: center; font-size: 13px;
+        }
+        #input-area {
+            display: flex; gap: 8px; padding: 12px 16px;
+            background: #0f3460; border-top: 1px solid #2a2a4a; align-items: center;
+        }
+        #msg-input {
+            flex: 1; padding: 10px 16px; border: 1px solid #2a2a4a;
+            border-radius: 20px; background: #1a1a2e; color: white; font-size: 14px; outline: none;
+        }
+        #msg-input:focus { border-color: #e94560; }
+        #send-btn {
+            width: 40px; height: 40px; border-radius: 50%; background: #e94560;
+            color: white; border: none; font-size: 18px; cursor: pointer;
+        }
+        .attach-btn { font-size: 20px; cursor: pointer; opacity: 0.7; }
+        .attach-btn:hover { opacity: 1; }
+        #file-input { display: none; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+    </style>
 </head>
 <body>
 
 <div id="app">
-    <!-- ЭКРАН АВТОРИЗАЦИИ -->
+    <!-- АВТОРИЗАЦИЯ -->
     <div id="auth-screen" class="screen">
         <div class="card">
             <h1>💬 LAN Chat</h1>
             <p class="subtitle">Прямой чат без сервера</p>
-            
             <div id="auth-tabs">
                 <button class="tab active" data-tab="login">Вход</button>
                 <button class="tab" data-tab="register">Регистрация</button>
             </div>
-            
-            <!-- Форма входа -->
             <form id="login-form" class="auth-form">
                 <input type="text" id="login-user" placeholder="Логин" required autocomplete="username">
                 <input type="password" id="login-pass" placeholder="Пароль" required autocomplete="current-password">
                 <button type="submit">Войти</button>
                 <p id="login-error" class="error hidden"></p>
             </form>
-            
-            <!-- Форма регистрации -->
             <form id="register-form" class="auth-form hidden">
-                <input type="text" id="reg-user" placeholder="Придумайте логин" required autocomplete="off" minlength="3" maxlength="20">
-                <input type="password" id="reg-pass" placeholder="Придумайте пароль" required autocomplete="new-password" minlength="4">
+                <input type="text" id="reg-user" placeholder="Придумайте логин" required minlength="3" maxlength="20">
+                <input type="password" id="reg-pass" placeholder="Придумайте пароль" required minlength="4">
                 <input type="password" id="reg-pass2" placeholder="Повторите пароль" required>
                 <button type="submit">Зарегистрироваться</button>
                 <p id="reg-error" class="error hidden"></p>
@@ -39,14 +173,13 @@
         </div>
     </div>
     
-    <!-- ЭКРАН ЧАТА -->
+    <!-- ЧАТ -->
     <div id="chat-screen" class="screen hidden">
         <div id="sidebar">
             <div id="user-info">
                 <span id="current-user">👤</span>
                 <button id="logout-btn" title="Выйти">🚪</button>
             </div>
-            
             <div id="contacts-section">
                 <h3>Контакты</h3>
                 <div id="add-contact">
@@ -57,17 +190,15 @@
                 <p id="contacts-error" class="error hidden"></p>
             </div>
         </div>
-        
         <div id="chat-area">
             <div id="chat-placeholder">
                 <div class="big-icon">💬</div>
-                <p>Выберите контакт слева или добавьте нового</p>
+                <p>Выберите контакт или добавьте новый</p>
             </div>
-            
             <div id="chat-window" class="hidden">
                 <div id="chat-header">
                     <span id="chat-partner"></span>
-                    <span id="connection-status" class="status-offline">⚫</span>
+                    <span id="connection-status">⚫</span>
                 </div>
                 <div id="messages"></div>
                 <div id="file-preview" class="hidden">
@@ -75,7 +206,7 @@
                     <button id="file-preview-clear">✕</button>
                 </div>
                 <div id="input-area">
-                    <label for="file-input" class="attach-btn" title="Прикрепить файл (до 5 МБ)">📎</label>
+                    <label for="file-input" class="attach-btn" title="Файл до 5 МБ">📎</label>
                     <input type="file" id="file-input" accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar">
                     <input type="text" id="msg-input" placeholder="Сообщение..." autocomplete="off">
                     <button id="send-btn">➤</button>
@@ -86,12 +217,369 @@
 </div>
 
 <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/storage.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/files.js"></script>
-<script src="js/peer.js"></script>
-<script src="js/chat.js"></script>
+<script>
+// ===== КОНФИГУРАЦИЯ =====
+const CONFIG = {
+    PEER_SERVER: { host: '0.peerjs.com', port: 443, secure: true },
+    MAX_FILE_SIZE: 5 * 1024 * 1024,
+    PEER_PREFIX: 'lanchat-',
+    STORAGE_KEYS: {
+        USERS: 'lanchat_users',
+        CURRENT_USER: 'lanchat_current',
+        CONTACTS: 'lanchat_contacts',
+        MESSAGES: 'lanchat_messages'
+    }
+};
+
+// ===== ХРАНИЛИЩЕ =====
+const Storage = {
+    saveUsers(users) { localStorage.setItem(CONFIG.STORAGE_KEYS.USERS, JSON.stringify(users)); },
+    getUsers() { return JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.USERS) || '{}'); },
+    saveCurrentUser(u) { localStorage.setItem(CONFIG.STORAGE_KEYS.CURRENT_USER, u); },
+    getCurrentUser() { return localStorage.getItem(CONFIG.STORAGE_KEYS.CURRENT_USER); },
+    clearCurrentUser() { localStorage.removeItem(CONFIG.STORAGE_KEYS.CURRENT_USER); },
+    saveContacts(user, contacts) { localStorage.setItem(CONFIG.STORAGE_KEYS.CONTACTS + '_' + user, JSON.stringify(contacts)); },
+    getContacts(user) { return JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.CONTACTS + '_' + user) || '[]'); },
+    saveMessages(user, partner, msgs) { localStorage.setItem(CONFIG.STORAGE_KEYS.MESSAGES + '_' + user + '_' + partner, JSON.stringify(msgs)); },
+    getMessages(user, partner) { return JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.MESSAGES + '_' + user + '_' + partner) || '[]'); }
+};
+
+// ===== АВТОРИЗАЦИЯ =====
+const Auth = {
+    currentUser: null,
+    
+    init() {
+        const saved = Storage.getCurrentUser();
+        if (saved) { this.currentUser = saved; this.showChat(); return; }
+        this.showAuth();
+        this.bindEvents();
+    },
+    
+    bindEvents() {
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                const isLogin = e.target.dataset.tab === 'login';
+                document.getElementById('login-form').classList.toggle('hidden', !isLogin);
+                document.getElementById('register-form').classList.toggle('hidden', isLogin);
+            });
+        });
+        
+        document.getElementById('login-form').addEventListener('submit', (e) => { e.preventDefault(); this.login(); });
+        document.getElementById('register-form').addEventListener('submit', (e) => { e.preventDefault(); this.register(); });
+        document.getElementById('logout-btn').addEventListener('click', () => this.logout());
+    },
+    
+    login() {
+        const username = document.getElementById('login-user').value.trim().toLowerCase();
+        const password = document.getElementById('login-pass').value;
+        const errorEl = document.getElementById('login-error');
+        
+        if (!username || !password) { errorEl.textContent = 'Заполните все поля'; errorEl.classList.remove('hidden'); return; }
+        
+        const users = Storage.getUsers();
+        if (!users[username]) { errorEl.textContent = 'Пользователь не найден'; errorEl.classList.remove('hidden'); return; }
+        if (users[username] !== this.hash(password)) { errorEl.textContent = 'Неверный пароль'; errorEl.classList.remove('hidden'); return; }
+        
+        errorEl.classList.add('hidden');
+        this.currentUser = username;
+        Storage.saveCurrentUser(username);
+        this.showChat();
+    },
+    
+    register() {
+        const username = document.getElementById('reg-user').value.trim().toLowerCase();
+        const password = document.getElementById('reg-pass').value;
+        const password2 = document.getElementById('reg-pass2').value;
+        const errorEl = document.getElementById('reg-error');
+        
+        errorEl.classList.add('hidden');
+        
+        if (!username || !password) { errorEl.textContent = 'Заполните все поля'; errorEl.classList.remove('hidden'); return; }
+        if (username.length < 3) { errorEl.textContent = 'Логин: минимум 3 символа'; errorEl.classList.remove('hidden'); return; }
+        if (password.length < 4) { errorEl.textContent = 'Пароль: минимум 4 символа'; errorEl.classList.remove('hidden'); return; }
+        if (password !== password2) { errorEl.textContent = 'Пароли не совпадают'; errorEl.classList.remove('hidden'); return; }
+        if (!/^[a-z0-9_]+$/.test(username)) { errorEl.textContent = 'Логин: только латиница, цифры и _'; errorEl.classList.remove('hidden'); return; }
+        
+        const users = Storage.getUsers();
+        if (users[username]) { errorEl.textContent = 'Пользователь уже существует'; errorEl.classList.remove('hidden'); return; }
+        
+        users[username] = this.hash(password);
+        Storage.saveUsers(users);
+        
+        this.currentUser = username;
+        Storage.saveCurrentUser(username);
+        this.showChat();
+    },
+    
+    logout() {
+        this.currentUser = null;
+        Storage.clearCurrentUser();
+        if (PeerManager.peer) PeerManager.peer.destroy();
+        document.getElementById('chat-screen').classList.add('hidden');
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('contacts-list').innerHTML = '';
+        document.getElementById('messages').innerHTML = '';
+    },
+    
+    hash(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) { hash = ((hash << 5) - hash) + str.charCodeAt(i); hash |= 0; }
+        return 'h_' + Math.abs(hash).toString(36);
+    },
+    
+    showAuth() {
+        document.getElementById('auth-screen').classList.remove('hidden');
+        document.getElementById('chat-screen').classList.add('hidden');
+    },
+    
+    showChat() {
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('chat-screen').classList.remove('hidden');
+        document.getElementById('current-user').textContent = '👤 ' + this.currentUser;
+        Chat.init(this.currentUser);
+    }
+};
+
+// ===== PEERJS =====
+const PeerManager = {
+    peer: null,
+    connections: {},
+    currentPartner: null,
+    username: null,
+    
+    init(username) {
+        this.username = username;
+        this.peer = new Peer(CONFIG.PEER_PREFIX + username, CONFIG.PEER_SERVER);
+        
+        this.peer.on('connection', (conn) => {
+            conn.on('open', () => {
+                const partner = conn.peer.replace(CONFIG.PEER_PREFIX, '');
+                this.connections[partner] = conn;
+                this.currentPartner = partner;
+                Chat.updateStatus('online');
+            });
+            conn.on('data', (data) => Chat.receiveMessage(data));
+            conn.on('close', () => {
+                const partner = conn.peer.replace(CONFIG.PEER_PREFIX, '');
+                delete this.connections[partner];
+                Chat.updateStatus('offline');
+            });
+        });
+    },
+    
+    connectTo(partner) {
+        if (this.connections[partner]) { this.currentPartner = partner; Chat.updateStatus('online'); return; }
+        const conn = this.peer.connect(CONFIG.PEER_PREFIX + partner, { reliable: true });
+        conn.on('open', () => {
+            this.connections[partner] = conn;
+            this.currentPartner = partner;
+            Chat.updateStatus('online');
+        });
+        conn.on('data', (data) => Chat.receiveMessage(data));
+        conn.on('close', () => {
+            delete this.connections[partner];
+            Chat.updateStatus('offline');
+        });
+    },
+    
+    send(data) {
+        if (!this.currentPartner || !this.connections[this.currentPartner]) return false;
+        try { this.connections[this.currentPartner].send(data); return true; }
+        catch(e) { return false; }
+    }
+};
+
+// ===== ФАЙЛЫ =====
+const FileHandler = {
+    selectedFile: null,
+    
+    init() {
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > CONFIG.MAX_FILE_SIZE) { alert('Файл больше 5 МБ!'); e.target.value = ''; return; }
+            this.selectedFile = file;
+            document.getElementById('file-preview-name').textContent = '📎 ' + file.name;
+            document.getElementById('file-preview').classList.remove('hidden');
+        });
+        document.getElementById('file-preview-clear').addEventListener('click', () => this.clear());
+    },
+    
+    clear() {
+        this.selectedFile = null;
+        document.getElementById('file-input').value = '';
+        document.getElementById('file-preview').classList.add('hidden');
+    },
+    
+    fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+};
+
+// ===== ЧАТ =====
+const Chat = {
+    username: null,
+    currentPartner: null,
+    
+    init(username) {
+        this.username = username;
+        PeerManager.init(username);
+        FileHandler.init();
+        this.bindUI();
+        this.loadContacts();
+    },
+    
+    bindUI() {
+        document.getElementById('add-contact-btn').addEventListener('click', () => this.addContact());
+        document.getElementById('contact-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') this.addContact(); });
+        document.getElementById('send-btn').addEventListener('click', () => this.sendMessage());
+        document.getElementById('msg-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') this.sendMessage(); });
+    },
+    
+    loadContacts() {
+        const contacts = Storage.getContacts(this.username);
+        document.getElementById('contacts-list').innerHTML = '';
+        contacts.forEach(c => this.renderContact(c));
+    },
+    
+    addContact() {
+        const input = document.getElementById('contact-input');
+        const contact = input.value.trim().toLowerCase();
+        const errorEl = document.getElementById('contacts-error');
+        
+        if (!contact) return;
+        if (contact === this.username) { errorEl.textContent = 'Нельзя добавить себя'; errorEl.classList.remove('hidden'); return; }
+        if (!/^[a-z0-9_]+$/.test(contact)) { errorEl.textContent = 'Неверный формат логина'; errorEl.classList.remove('hidden'); return; }
+        
+        const contacts = Storage.getContacts(this.username);
+        if (contacts.includes(contact)) { errorEl.textContent = 'Уже в контактах'; errorEl.classList.remove('hidden'); return; }
+        
+        contacts.push(contact);
+        Storage.saveContacts(this.username, contacts);
+        this.renderContact(contact);
+        input.value = '';
+        errorEl.classList.add('hidden');
+    },
+    
+    renderContact(contact) {
+        const list = document.getElementById('contacts-list');
+        const div = document.createElement('div');
+        div.className = 'contact-item';
+        div.innerHTML = '<span>👤 ' + contact + '</span><span class="delete-contact">✕</span>';
+        div.addEventListener('click', (e) => {
+            if (e.target.classList.contains('delete-contact')) {
+                const contacts = Storage.getContacts(this.username).filter(c => c !== contact);
+                Storage.saveContacts(this.username, contacts);
+                this.loadContacts();
+                return;
+            }
+            this.openChat(contact);
+        });
+        list.appendChild(div);
+    },
+    
+    openChat(partner) {
+        this.currentPartner = partner;
+        document.getElementById('chat-placeholder').classList.add('hidden');
+        document.getElementById('chat-window').classList.remove('hidden');
+        document.getElementById('chat-partner').textContent = '💬 ' + partner;
+        
+        document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
+        
+        // История
+        const msgs = Storage.getMessages(this.username, partner);
+        document.getElementById('messages').innerHTML = '';
+        msgs.forEach(m => this.displayMessage(m, m.sent));
+        
+        PeerManager.connectTo(partner);
+        this.updateStatus('connecting');
+        document.getElementById('msg-input').focus();
+    },
+    
+    updateStatus(status) {
+        const el = document.getElementById('connection-status');
+        el.textContent = status === 'online' ? '🟢' : status === 'connecting' ? '🟡' : '⚫';
+    },
+    
+    async sendMessage() {
+        const input = document.getElementById('msg-input');
+        const text = input.value.trim();
+        const file = FileHandler.selectedFile;
+        
+        if (!text && !file) return;
+        if (!this.currentPartner) return;
+        
+        const time = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        
+        if (file) {
+            const base64 = await FileHandler.fileToBase64(file);
+            const msg = { type: 'file', content: base64, fileName: file.name, fileType: file.type, time: time };
+            PeerManager.send(msg);
+            this.displayMessage(msg, true);
+            FileHandler.clear();
+        }
+        
+        if (text) {
+            const msg = { type: 'text', content: text, time: time };
+            PeerManager.send(msg);
+            this.displayMessage(msg, true);
+            Storage.saveMessages(this.username, this.currentPartner, 
+                [...Storage.getMessages(this.username, this.currentPartner), { ...msg, sent: true }]);
+        }
+        
+        input.value = '';
+        input.focus();
+    },
+    
+    receiveMessage(msg) {
+        this.displayMessage(msg, false);
+        if (msg.type === 'text') {
+            Storage.saveMessages(this.username, this.currentPartner,
+                [...Storage.getMessages(this.username, this.currentPartner), { ...msg, sent: false }]);
+        }
+    },
+    
+    displayMessage(msg, sent) {
+        const container = document.getElementById('messages');
+        const div = document.createElement('div');
+        div.className = 'message ' + (sent ? 'sent' : 'received');
+        
+        if (msg.type === 'text') {
+            div.innerHTML = `<div class="msg-text">${this.esc(msg.content)}</div><div class="msg-time">${msg.time}</div>`;
+        } else {
+            div.innerHTML = `
+                <div class="msg-file" onclick="this.querySelector('a').click()">
+                    ${msg.fileType && msg.fileType.startsWith('image/') 
+                        ? `<img src="${msg.content}" style="max-width:200px;max-height:200px;border-radius:6px;">` 
+                        : '📎'}
+                    <a href="${msg.content}" download="${msg.fileName || 'file'}" style="display:none;"></a>
+                    <span style="font-size:12px;">${msg.fileName || 'Файл'}</span>
+                </div>
+                <div class="msg-time">${msg.time}</div>`;
+        }
+        
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+    },
+    
+    esc(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+};
+
+// ===== ЗАПУСК =====
+Auth.init();
+console.log('Чат загружен! Регистрация и вход работают.');
+</script>
 
 </body>
 </html>
