@@ -1,0 +1,9 @@
+{
+  "name": "codespaces-telegram-http-gateway",
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {
+    "http-proxy": "^1.18.1",
+    "serve-static": "^1.16.2"
+  }
+}

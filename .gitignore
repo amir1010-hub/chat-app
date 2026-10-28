@@ -1,0 +1,4 @@
+.env
+telegram-client/
+node_modules/
+gateway/node_modules/
